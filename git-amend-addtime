@@ -1,0 +1,61 @@
+#!/bin/bash
+# Copyright 2018-2020 Marco Fontani <MFONTANI@cpan.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# README: git amend-addtime
+#
+# Amend the HEAD commit's timestamp to a later, or ealier, timestamp.
+#
+# Usage:
+# - `git amend-addtime 86400`
+# - `git amend-addtime -3600`
+
+if [[ -z "$1" ]]; then
+    >&2 cat <<END_USAGE
+Usage: $(basename "$0") [OPTIONS] SECONDS
+
+Performs a git commit --amend --no-edit --date WHEN
+.. whereby WHEN is the original commit's date, plus SECONDS seconds.
+END_USAGE
+    exit 0
+fi
+
+ORIG_TIMESTAMP="$( git show --no-patch --format='%at' )"
+#ORIG_8601="$( date --iso-8601=seconds --date "@$ORIG_TIMESTAMP" )"
+((NEW_TIMESTAMP = ORIG_TIMESTAMP + $1))
+NEW_8601="$( date --iso-8601=seconds --date "@$NEW_TIMESTAMP" )"
+if [[ -z "$NEW_TIMESTAMP" ]]; then
+    >&2 echo "There's been some problem (empty new timestamp?!).."
+    exit 1
+fi
+if [[ "$NEW_TIMESTAMP" -eq "$ORIG_TIMESTAMP" ]]; then
+    >&2 echo "There's been some problem (same timestamp?!).."
+    exit 1
+fi
+# >&2 echo "From $ORIG_TIMESTAMP ($ORIG_8601) to $NEW_TIMESTAMP ($NEW_8601)"
+GIT_COMMITTER_DATE="$NEW_8601" git commit --amend --no-edit --date "$NEW_8601"

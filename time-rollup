@@ -1,0 +1,96 @@
+#!/bin/bash
+# Copyright 2018-2020 Marco Fontani <MFONTANI@cpan.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# README: time-rollup
+#
+# Execute a command a number of times, then spit out the min, max, and a couple
+# pNN percentages for its execution.  Defaults to executing it 10 times; can
+# take an optional numerical first parameter which overrides this.
+# Requires `/usr/bin/time` to be installed, as well as `perl`.
+#
+# Usage:
+# - `time-rollup sleep 1`
+# - `time-rollup 5 sleep 1`
+
+if [[ ! -x /usr/bin/time ]]; then
+    >&2 echo "You don't have /usr/bin/time."
+    >&2 echo "You'll need the 'time' package installed!"
+    exit 1
+fi
+
+howmany=10
+if [[ "$1" =~ ^[1-9][0-9]*$ ]]; then
+    howmany="$1"
+    shift
+fi
+
+{
+    # shellcheck disable=SC2034
+    for i in $(seq "$howmany"); do
+        /usr/bin/time -f '%e' "$@"
+    done >/dev/null
+} 2>&1 | perl -MPOSIX=ceil -lne'
+    if (/^(\d+[.]\d+)$/) {
+        $timing = $1;
+        push @got, $timing;
+        $sum += $timing;
+        $squares_sum += $timing * $timing;
+        $n++;
+    }
+    END {
+        if (!$sum) {
+            warn "Was too fast: $n done in $sum seconds.\n";
+            exit 0;
+        }
+        @sorted = sort { $a <=> $b } @got;
+        $mean = $sum / $n;
+        $sum_squared = $sum * $sum;
+        $stddev = sqrt(($squares_sum - $sum_squared / $n) / ($n - 1));
+        sub _pct {
+            ($pct) = @_;
+            return $sorted[0]  if $pct eq "0";
+            return $sorted[-1] if $pct eq "100";
+            $how_many = scalar @sorted;
+            $idx = ceil($how_many / ( 100 / $n ));
+            $idx = $#sorted
+                if $idx > $#sorted;
+            return $sorted[$idx];
+        }
+        printf "%d done in %.3f / min %s p75 %s p90 %s p95 %s max %s / %.3f±%.3f / %.3f/s\n",
+            $n, $sum,
+            _pct(0),
+            _pct(75),
+            _pct(90),
+            _pct(95),
+            _pct(100),
+            $mean,
+            $stddev,
+            $n/$sum,
+    }
+'
