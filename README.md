@@ -43,6 +43,14 @@ Usage:
 - `foo | evenodd`
 - `foo | evenodd 42`
 
+## filter-file-exists
+
+A pipe filter which only outputs files which are found on the filesystem.
+
+Usage:
+
+- `prove -j4 $(git fcm | filter-file-exists | grep '[.]t$')`
+
 ## ggrep
 
 Does a `git grep` on the current repository, but instructing `git grep` to
