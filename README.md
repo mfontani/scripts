@@ -95,9 +95,11 @@ Usage:
 
 Run a command on all lines but the first one (the "h"-eader). Useful to i.e.
 run a `grep` on all lines _but_ the first.
+Optionally provide a number of lines to keep instead, via `-N`.
 
 Usage:
 - `h grep foobar file.csv`
+- `h -3 grep foobar file.csv`
 
 ## highlight
 

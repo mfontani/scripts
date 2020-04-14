@@ -31,10 +31,23 @@
 #
 # Run a command on all lines but the first one (the "h"-eader). Useful to i.e.
 # run a `grep` on all lines _but_ the first.
+# Optionally provide a number of lines to keep instead, via `-N`.
 #
 # Usage:
 # - `h grep foobar file.csv`
+# - `h -3 grep foobar file.csv`
 
-read -r line
-echo "$line"
+keep=1
+if [ -n "$1" ]; then
+    keep_override="$( expr "x$1" : 'x[-]\([1-9][0-9]*\)$' )"
+    if [ -n "$keep_override" ]; then
+        keep=$keep_override
+        shift
+    fi
+fi
+
+for _ in $(seq "$keep"); do
+    read -r line
+    echo "$line"
+done
 "$@"
