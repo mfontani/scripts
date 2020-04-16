@@ -132,6 +132,25 @@ it belongs to.
 Usage:
 - `lsw ls`
 
+## muffle-env
+
+Replaces _all_ environment variable _values_ with their _name_, in the format
+`{{NAME}}`, i.e. for env var `FOO=BAR` it'd show `blah {{FOO}} baz` for the
+given string `blah BAR baz`.
+If parameters are given, it only performs the replacement for environment
+variable _names_ which match any of the regexes given as parameters.
+Note this may end up substituting parts of values of other environment
+variables which wouldn't otherwise be matched.
+
+Useful to ensure a log file or log output doesn't end up containing any
+sensitive secret which is present in the environment.
+Just add it at the end of a pipe.
+
+Usage:
+
+- `env | muffle-env`
+- `git push origin master:master 2>&1 | muffle-env '^SSH_'`
+
 ## time-rollup
 
 Execute a command a number of times, then spit out the min, max, and a couple
