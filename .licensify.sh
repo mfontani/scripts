@@ -5,6 +5,7 @@ LICENSE=$( sed 's/^/# /;s/^# $/#/' LICENSE )
 for f in ./*; do
     [[ "$f" == ./LICENSE ]] && continue
     [[ "$f" == ./README.md ]] && continue
+    [[ "$f" == ./Makefile ]] && continue
     if grep -q '^[#][ ]Copyright' "$f"; then
         continue
     fi
