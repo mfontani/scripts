@@ -153,14 +153,18 @@ Usage:
 
 ## stddev
 
-Calculate the mean of the set (the parameters), the standard deviation, and
-output some useful percentile values from the set, too.
+Calculate the mean of the set, the standard deviation, and output some useful
+percentile values from the set, too.
 Needs a list of numerical (integers or floating point, but beware those)
-numbers.
+numbers, given as either parameters or as input.
+The "number" part of the input ought to be either at the start, or at the
+end, of the parameter - or be wholly "the" parameter.
 
 Usage:
-- `stddev $(seq 1 10)`
 - `stddev $(seq 1 1000)`
+- `for i in $(seq 1 10); do echo "$i"; done | stddev`
+- `for i in $(seq 1 10); do echo "x $i"; done | stddev`
+- `for i in $(seq 1 10); do echo "$i x"; done | stddev`
 
 ## time-rollup
 

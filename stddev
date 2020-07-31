@@ -32,36 +32,48 @@ use POSIX qw<ceil>;
 
 # README: stddev
 #
-# Calculate the mean of the set (the parameters), the standard deviation, and
-# output some useful percentile values from the set, too.
+# Calculate the mean of the set, the standard deviation, and output some useful
+# percentile values from the set, too.
 # Needs a list of numerical (integers or floating point, but beware those)
-# numbers.
+# numbers, given as either parameters or as input.
+# The "number" part of the input ought to be either at the start, or at the
+# end, of the parameter - or be wholly "the" parameter.
 #
 # Usage:
-# - `stddev $(seq 1 10)`
 # - `stddev $(seq 1 1000)`
+# - `for i in $(seq 1 10); do echo "$i"; done | stddev`
+# - `for i in $(seq 1 10); do echo "x $i"; done | stddev`
+# - `for i in $(seq 1 10); do echo "$i x"; done | stddev`
 
 my @PERCENTAGES = qw<50 90 95 99 100>;
 my $PERCENT = 100;
-
-die "Need a list of numbers.\n" if !@ARGV;
+my $RX_NUMBER = qr![-+]? [0-9]+ (?: [.][0-9]* )?!xms;
 
 my @bad;
-for (@ARGV) {
-    push @bad, $_
-        if !m!\A [-+]? [0-9]* (?: [.][0-9]* )? \z!xms;
+my @numbers;
+while (<>) {
+    chomp;
+    if (m!\A \s* ($RX_NUMBER) \b!xms) {
+        push @numbers, $1;
+        next;
+    }
+    if (m!\b ($RX_NUMBER) \s* \z!xms) {
+        push @numbers, $1;
+        next;
+    }
+    push @bad, $_;
 }
 die "Bad inputs don't look like numbers: @bad\n" if @bad;
 
 my $sum         = 0;
 my $squares_sum = 0;
-for (@ARGV) {
+for (@numbers) {
     $sum         += $_;
     $squares_sum += $_ * $_;
 }
 
-my @sorted      = sort { $a <=> $b } @ARGV;
-my $n           = scalar @ARGV;
+my @sorted      = sort { $a <=> $b } @numbers;
+my $n           = scalar @numbers;
 my $mean        = $n > 1 ? $sum / $n : $sum;
 my $sum_squared = $sum * $sum;
 my $stddev      = $n > 1 ? sqrt(($squares_sum - $sum_squared / $n) / ($n - 1)) : 0;
