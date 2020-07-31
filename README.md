@@ -151,6 +151,17 @@ Usage:
 - `env | muffle-env`
 - `git push origin master:master 2>&1 | muffle-env '^SSH_'`
 
+## stddev
+
+Calculate the mean of the set (the parameters), the standard deviation, and
+output some useful percentile values from the set, too.
+Needs a list of numerical (integers or floating point, but beware those)
+numbers.
+
+Usage:
+- `stddev $(seq 1 10)`
+- `stddev $(seq 1 1000)`
+
 ## time-rollup
 
 Execute a command a number of times, then spit out the min, max, and a couple

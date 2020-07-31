@@ -1,0 +1,87 @@
+#!perl
+# Copyright 2018-2020 Marco Fontani <MFONTANI@cpan.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+use 5.020_000;
+use warnings;
+use POSIX qw<ceil>;
+
+# README: stddev
+#
+# Calculate the mean of the set (the parameters), the standard deviation, and
+# output some useful percentile values from the set, too.
+# Needs a list of numerical (integers or floating point, but beware those)
+# numbers.
+#
+# Usage:
+# - `stddev $(seq 1 10)`
+# - `stddev $(seq 1 1000)`
+
+my @PERCENTAGES = qw<50 90 95 99 100>;
+my $PERCENT = 100;
+
+die "Need a list of numbers.\n" if !@ARGV;
+
+my @bad;
+for (@ARGV) {
+    push @bad, $_
+        if !m!\A [-+]? [0-9]* (?: [.][0-9]* )? \z!xms;
+}
+die "Bad inputs don't look like numbers: @bad\n" if @bad;
+
+my $sum         = 0;
+my $squares_sum = 0;
+for (@ARGV) {
+    $sum         += $_;
+    $squares_sum += $_ * $_;
+}
+
+my @sorted      = sort { $a <=> $b } @ARGV;
+my $n           = scalar @ARGV;
+my $mean        = $n > 1 ? $sum / $n : $sum;
+my $sum_squared = $sum * $sum;
+my $stddev      = $n > 1 ? sqrt(($squares_sum - $sum_squared / $n) / ($n - 1)) : 0;
+
+my %idx;
+for my $pct (@PERCENTAGES) {
+    $idx{$pct} = ceil($n / ( $PERCENT / $pct ));
+    $idx{$pct} = $#sorted
+        if $idx{$pct} > $#sorted;
+}
+
+$_ = sprintf '%.6f', $_ for $mean, $stddev;
+
+say "$n total, mean $mean stddev $stddev";
+say sprintf '%3sth percentile: %f (%s)', $_, $sorted[$idx{$_}], pct_diff($mean, $sorted[$idx{$_}])
+    for @PERCENTAGES;
+exit;
+
+sub pct_diff {
+    my ($base, $value) = @_;
+
+    return sprintf '%+.2f%%', $base > 0 ? (($value - $base) * $PERCENT / $base) : 0;
+}
