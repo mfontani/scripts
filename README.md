@@ -24,7 +24,11 @@ Usage:
 
 ## colorz
 
-Displays all 256 ANSI colors your terminal hopefully supports.
+Displays:
+- all 256 ANSI colors your terminal hopefully supports
+- the "base" foreground and background colors
+- a truecolor "rainbow", useful to see if your terminal supports it.
+
 Provide one color number to see it used in the background color.
 
 Usage:
