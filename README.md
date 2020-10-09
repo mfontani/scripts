@@ -181,6 +181,23 @@ Usage:
 - `time-rollup sleep 1`
 - `time-rollup 5 sleep 1`
 
+## xargso
+
+An easy-to-use replacement for "xargs -o" for xargs which don't have it, and
+need the well-known "shell hack" to perform the same operation.
+
+    -o, --open-tty
+      Reopen stdin as /dev/tty in the child process before executing the command.  This is useful if you want xargs to run an interactive application.
+
+If you need to pass options to xargs, provide them _first_, and separate them
+from the rest via `--`. Only options until the _first_ `--` delimiter are
+passed to xargs; the rest are for the command to run
+
+Usage:
+
+- `ls | xargso vim -o` (don't do this! use null terminators!)
+- `printf 'foo\0bar\0baz' | xargso -0 -- echo`
+
 
 # License
 
