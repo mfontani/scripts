@@ -39,7 +39,7 @@
 set -e
 
 function usage () {
-    if [[ ! -z "$1" ]]; then
+    if [[ -n "$1" ]]; then
         >&2 echo "Error: $*"
         >&2 echo ''
     fi
@@ -57,9 +57,9 @@ if [[ -z "$color" ]]; then
     usage 'Need an ANSI_COLOR'
 fi
 shift
-if [[ ! -z "$1" ]]; then
+if [[ -n "$1" ]]; then
     usage 'Too many arguments.'
 fi
 
 ESC="$( printf '\033' )"
-sed -e "s/$regex/$ESC[${color}m&$ESC[0m/g" -
+sed -e "s/$regex/${ESC}[${color}m&${ESC}[0m/g" -
