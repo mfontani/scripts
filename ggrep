@@ -43,13 +43,13 @@
 set -euo pipefail
 
 # Find list of custom excludes, one setting per line, and kill newlines.
-exclude_list="$( (git config --get-all ggrep.exclude || echo -n '') | tr $'\n' ' ' )"
+mapfile -t exclude_list < <(  (git config --get-all ggrep.exclude || echo -n '') | tr $'\n' ' ' )
 
 # No need to invoke an exclude list if none exists
-if [[ -z "$exclude_list" ]]; then
+if [[ "${#exclude_list[@]}" -eq 0 ]]; then
     git grep "$@"
     exit 0
 fi
 
 # Git grep with auto exclude list
-git grep "$@" -- $exclude_list
+git grep "$@" -- "${exclude_list[@]}"
