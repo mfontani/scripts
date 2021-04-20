@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018-2020 Marco Fontani <MFONTANI@cpan.org>
+# Copyright 2018-2021 Marco Fontani <MFONTANI@cpan.org>
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -82,7 +82,9 @@ fi
                 if $idx > $#sorted;
             return $sorted[$idx];
         }
-        printf "%d done in %.3f / min %s p75 %s p90 %s p95 %s max %s / %.3f±%.3f / %.3f/s\n",
+        my $per_s = $n/$sum;
+        my $per_m = $n/$sum*60;
+        printf "%d done in %.3f / min %s p75 %s p90 %s p95 %s max %s / %.3f±%.3f / %.3f/s%s\n",
             $n, $sum,
             _pct(0),
             _pct(75),
@@ -91,6 +93,7 @@ fi
             _pct(100),
             $mean,
             $stddev,
-            $n/$sum,
+            $per_s,
+            $per_s < 1 ? sprintf " / %.3f/m", $per_m : "";
     }
 '
