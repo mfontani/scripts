@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env perl
 # Copyright 2018-2020 Marco Fontani <MFONTANI@cpan.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,40 +42,116 @@
 # - `colorz 22`
 # - `colorz 22 23`
 
-if [[ -n "$1" ]]; then
-    if [[ -n "$2" ]]; then
-        perl -e'
-        for(@ARGV) {
-            s/\Acolor//;
-            my $l = 5 - length "$_";
-            printf  "\x1b[38;5;%umcolor%u\x1b[0m\n", $_, $_;
+use strict;
+use warnings;
+
+binmode *STDOUT, ':encoding(UTF-8)';
+
+{
+    my ($fore, $back) = @ARGV;
+    if (length $fore) {
+        if (length $back) {
+            for (@ARGV) {
+                s/\Acolor//;
+                my $l = 5 - length "$_";
+                printf  "\x1b[38;5;%umcolor%u\x1b[0m\n", $_, $_;
+            }
         }
-        ' "$@"
-        exit 0
-    else
-        perl -e'
-        for(@ARGV) {
-            s/\Acolor//;
-            my $l = 5 - length "$_";
-            printf  "\x1b[48;5;%umcolor%u\x1b[0m", $_, $_;
+        else {
+            for (@ARGV) {
+                s/\Acolor//;
+                my $l = 5 - length "$_";
+                printf  "\x1b[48;5;%umcolor%u\x1b[0m", $_, $_;
+            }
         }
-        ' "$@"
-        exit 0
-    fi
-fi
-perl -e'for(0..255) { my $l = 5 - length "$_"; printf( "\x1b[38;5;%umcolor%u%s", $_, $_, " "x$l,); print "\n" if $_ % 10 == 9; } print "\n";'
-perl -e'for(30..37) { print " " if $_ != 30; printf "\x1b[%dm%-2s\x1b[0m", $_, $_ }; print "\n"'
-perl -e'for(40..47) { print " " if $_ != 40; printf "\x1b[%dm%-2s\x1b[0m", $_, $_ }; print "\n"'
-awk 'BEGIN{
-    s="/\\/\\/\\/\\/\\"; s=s s s s s s s s;
-    for (colnum = 0; colnum<77; colnum++) {
-        r = 255-(colnum*255/76);
-        g = (colnum*510/76);
-        b = (colnum*255/76);
-        if (g>255) g = 510-g;
-        printf "\033[48;2;%d;%d;%dm", r,g,b;
-        printf "\033[38;2;%d;%d;%dm", 255-r,255-g,255-b;
-        printf "%s\033[0m", substr(s,colnum+1,1);
+        exit 0;
     }
-    printf "\n";
-}'
+}
+
+for my $spec (
+        [ '0', '' ],
+        [ '0;1', '/Bold' ],
+        [ '0;2', '/Faint' ],
+        [ '0;3', '/Italic' ],
+        [ '0;4', '/Underline' ],
+        [ '0;5', '/Blink' ],
+        [ '0;7', '/Reverse' ],
+        [ '0;9', '/Crossout' ],
+        [ '0;53', '/Overline' ],
+    ) {
+    my ($mode, $description) = @$spec;
+    for my $i (30..37) {
+        neatansi("\e[$mode;${i}m", '18', "$mode;${i}m$description");
+    }
+    print "\n";
+}
+
+for my $i (40..47) {
+    neatansi("\e[${i}m", 9, "\\e[${i}m");
+}
+print "\n";
+
+for my $i (0..15) {
+    my $fg = $i == 0 || $i == 8 ? 37 : 30;
+    neatansi("\e[${fg}m\e[48;5;${i}m", 3, sprintf '%3s', $i);
+}
+print "\n";
+for my $i (16..231) {
+    my $fg = (($i - 16) % 36 > 10) ? 30 : 37;
+    neatansi("\e[${fg}m\e[48;5;${i}m", 3, sprintf '%3s', $i);
+    print "\n" if ($i-16)%36==35;
+}
+for my $i (232..255) {
+    my $fg = $i > 243 || $i == 8 ? 30 : 37;
+    neatansi("\e[${fg}m\e[48;5;${i}m", 3, sprintf '%3s', $i);
+}
+print "\n";
+
+fullloophalf("",  "0", "0"); # R
+fullloophalf("0", "",  "0"); # G
+fullloophalf("0", "0", "");  # B
+fullloophalf("",  "",  "0"); # RG
+fullloophalf("0", "",  "");  # GB
+fullloophalf("",  "0", "");  # RB
+fullloophalf("",  "",  "");  # Greyscale
+
+printf "\e[0m";
+exit 0;
+
+sub neatansi {
+    my ($prefix, $size, $string) = @_;
+
+    print $prefix;
+    my $fmt = sprintf '%%-%ds', $size;
+    my $padded = sprintf $fmt, $string;
+    my $spaces = length($padded) - length($string);
+    my $fmtspaces = sprintf '%%-%ds', $spaces;
+    printf "%s\e[0m$fmtspaces", $string, ' ';
+}
+
+sub fullloop {
+    my ($_r, $_g, $_b) = @_;
+    for my $l (0..127, reverse 128..255) {
+        my $r = length $_r ? $_r : $l;
+        my $g = length $_g ? $_g : $l;
+        my $b = length $_b ? $_b : $l;
+        printf "\e[0;48;2;%s;%s;%sm ", $r, $g, $b;
+        print "\e[0m\n" if $l == 127 || $l == 128;
+    }
+}
+
+sub fullloophalf {
+    my ($_r, $_g, $_b) = @_;
+    for my $i (0..127) {
+        printf "\e[0m";
+        for my $x ([38,$i], [48,255-$i]) {
+            my ($n, $l) = @$x;
+            my $r = length $_r ? $_r : $l;
+            my $g = length $_g ? $_g : $l;
+            my $b = length $_b ? $_b : $l;
+            printf "\e[%s;2;%s;%s;%sm", $n, $r, $g, $b;
+        }
+        print "\N{UPPER HALF BLOCK}";
+    }
+    print "\e[0m\n";
+}
