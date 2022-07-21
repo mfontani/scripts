@@ -37,6 +37,16 @@ Usage:
 - `colorz 22`
 - `colorz 22 23`
 
+## contrast
+
+Shows WCAG contrast for the FOREGROUND on BACKGROUND hex colors.
+
+Usage:
+
+- `contrast ff0000 000000`
+- `contrast ff0000 000000 -l`
+- `for f in ff0000 aa0000; for b in 000000 333333; do contrast "$f" "$b" -l; done`
+
 ## evenodd
 
 Colorizes STDIN lines (even and odd), with a given optional color for the
