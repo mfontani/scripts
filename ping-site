@@ -1,0 +1,73 @@
+#!/usr/bin/env perl
+# Copyright 2018-2022 Marco Fontani <MFONTANI@cpan.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# README: ping-site
+#
+# Given a URL to "ping" every second, it makes a request to that URL every
+# second for a maximum of five minutes, after which it gives up.
+# Uses `notify-send` to notify you whether the site is now up, or whether the 5
+# minutes' timeout has passed, and the site is still down.
+# Requires `perl` to be installed, as well as `Mojolicious` (on Debian,
+# `sudo apt install -y -q libmojolicious-perl`), as well as `notify-send` (and
+# likely a running daemon like `dunst`) to be able to send you notifications.
+#
+# Usage:
+#
+# - `ping-site https://www.theregister.com/`
+use 5.020_001;
+use warnings;
+use Mojo::UserAgent qw<>;
+
+my $url = shift
+    or die "Need a URL!";
+
+my $started = time;
+my $cutoff  = $started + 5 * 60;
+
+my $pid = fork();
+if ($pid) { # parent
+    say "Will try every second until @{[ scalar localtime $cutoff ]}.  Going in background.";
+    exit 0;
+}
+
+my $ua = Mojo::UserAgent->new;
+while (1) {
+    my $res = $ua->get($url)->result;
+    if (!$res->is_success) {
+        my $now = time;
+        if ($now > $cutoff) {
+            qx!notify-send -a 'ping-site' -u critical 'Site is STILL DOWN' "$url"!;
+            exit 0;
+        }
+        sleep 1;
+        next;
+    }
+    qx!notify-send -a 'ping-site' 'site is up' "$url"!;
+    exit 0;
+}

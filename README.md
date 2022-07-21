@@ -165,6 +165,23 @@ Usage:
 - `env | muffle-env`
 - `git push origin master:master 2>&1 | muffle-env '^SSH_'`
 
+## ping-site
+
+Given a URL to "ping" every second, it makes a request to that URL every
+second for a maximum of five minutes, after which it gives up.
+Uses `notify-send` to notify you whether the site is now up, or whether the 5
+minutes' timeout has passed, and the site is still down.
+Requires `perl` to be installed, as well as `Mojolicious` (on Debian,
+`sudo apt install -y -q libmojolicious-perl`), as well as `notify-send` (and
+likely a running daemon like `dunst`) to be able to send you notifications.
+
+Usage:
+
+- `ping-site https://www.theregister.com/`
+use 5.020_001;
+use warnings;
+use Mojo::UserAgent qw<>;
+
 ## stddev
 
 Calculate the mean of the set, the standard deviation, and output some useful
